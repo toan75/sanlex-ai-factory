@@ -1,0 +1,6 @@
+POST https://hello-agent-service-952732667149.us-central1.run.app/generate-code
+Content-Type: application/json
+
+{
+    "prompt": "Viết một hàm Python để tính tổng ba số a và b, c"
+}

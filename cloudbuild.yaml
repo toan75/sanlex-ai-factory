@@ -1,0 +1,31 @@
+steps:
+  # Bước 1: Build Docker image
+  # Cloud Build sẽ tự động thay thế $PROJECT_ID và $SHORT_SHA (mã commit)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+      - '.'
+
+  # Bước 2: Push Docker image lên Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+
+  # Bước 3: Triển khai phiên bản mới lên Cloud Run
+  - name: 'gcr.io/google-cloud-sdk/gcloud'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'hello-agent-service' # Tên service đã tạo ở bước trước
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--quiet' # Thêm cờ này để không hỏi xác nhận
+
+# Lưu trữ image đã build để có thể sử dụng ở các bước sau
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'

@@ -45,3 +45,7 @@ steps:
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+
+# Chỉ định tùy chọn ghi nhật ký để tránh lỗi về logs_bucket
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -1,31 +1,49 @@
 steps:
   # Bước 1: Build Docker image
-  # Cloud Build sẽ tự động thay thế $PROJECT_ID và $SHORT_SHA (mã commit)
+  # Image này chứa cả mã nguồn và các thư viện test (pytest, httpx)
   - name: 'gcr.io/cloud-builders/docker'
+    id: Build
     args:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
       - '.'
 
-  # Bước 2: Push Docker image lên Artifact Registry
+  # Bước 2: Chạy Unit Tests (CỔNG CHẤT LƯỢNG)
+  # Sử dụng image vừa build ở bước trên để chạy pytest.
+  # Nếu pytest thất bại (trả về exit code khác 0), toàn bộ quy trình build sẽ dừng lại tại đây.
   - name: 'gcr.io/cloud-builders/docker'
+    id: Test
+    entrypoint: 'pytest'
+    args:
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+
+  # Bước 3: Push Docker image (Chỉ chạy nếu bước Test thành công)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Push
     args:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+    wait_for: [Test] # Đảm bảo bước này chỉ chạy sau khi Test thành công
 
-  # Bước 3: Triển khai phiên bản mới lên Cloud Run
+  # Bước 4: Triển khai lên Cloud Run (Chỉ chạy nếu bước Push thành công)
   - name: 'gcr.io/google-cloud-sdk/gcloud'
+    id: Deploy
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
-      - 'hello-agent-service' # Tên service đã tạo ở bước trước
+      - 'hello-agent-service'
       - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
       - '--region=us-central1'
       - '--platform=managed'
-      - '--quiet' # Thêm cờ này để không hỏi xác nhận
+      - '--quiet'
+    wait_for: [Push] # Đảm bảo bước này chỉ chạy sau khi Push thành công
 
-# Lưu trữ image đã build để có thể sử dụng ở các bước sau
+# Lưu trữ image đã build để sử dụng trong các bước
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+
+# --- THÊM KHỐI NÀY VÀO ---
+options:
+  logging: CLOUD_LOGGING_ONLY

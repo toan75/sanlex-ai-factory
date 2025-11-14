@@ -11,7 +11,7 @@ MODEL_NAME = "gemini-2.5-pro"
 # --- Khởi tạo ---
 app = FastAPI(
     title="SanLexAi Automated Factory",
-    description="Agent for Code Generation and Unit Testing"
+    description="Agent for Code Generation and Unit Testing V.1"
 )
 
 llm = ChatVertexAI(

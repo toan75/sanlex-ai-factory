@@ -8,17 +8,20 @@ steps:
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
       - '.'
 
-  # Bước 2: Chạy Unit Tests (CỔNG CHẤT LƯỢNG) - ĐÃ SỬA LỖI
-  # Sử dụng 'docker run' để thực thi pytest bên trong image chúng ta vừa build.
+  # Bước 2: Chạy Unit Tests (Cải tiến)
+  # Chạy container từ image vừa build và thực thi lệnh pytest bên trong nó.
   - name: 'gcr.io/cloud-builders/docker'
     id: Test
+    entrypoint: 'sh'
     args:
-      - 'run'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
-      - 'pytest' # Lệnh này sẽ được thực thi bên trong container mới
-    wait_for: [Build] # Đảm bảo bước này chỉ chạy sau khi Build thành công
+    - '-c'
+    - |
+      docker run \
+        us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA \
+        pytest
+    wait_for: [Build]
 
-  # Bước 3: Push Docker image (Chỉ chạy nếu bước Test thành công)
+  # Bước 3: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'
     id: Push
     args:
@@ -26,7 +29,7 @@ steps:
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
     wait_for: [Test]
 
-  # Bước 4: Triển khai lên Cloud Run (Chỉ chạy nếu bước Push thành công)
+  # Bước 4: Triển khai lên Cloud Run
   - name: 'gcr.io/google-cloud-sdk/gcloud'
     id: Deploy
     entrypoint: gcloud
@@ -35,15 +38,10 @@ steps:
       - 'deploy'
       - 'hello-agent-service'
       - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
-      - '--region=us-central1'
+      - '--region=asia-southeast1'
       - '--platform=managed'
       - '--quiet'
     wait_for: [Push]
 
-# Lưu trữ image đã build để sử dụng trong các bước
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
-
-# --- THÊM KHỐI NÀY VÀO Triger---
-options:
-  logging: CLOUD_LOGGING_ONLY

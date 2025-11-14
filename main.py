@@ -5,7 +5,7 @@ from langchain_google_vertexai import ChatVertexAI
 
 # --- Cấu hình ---
 PROJECT_ID = "sanlaw-477509"
-LOCATION = "us-central1"
+LOCATION = "asia-southeast1"
 MODEL_NAME = "gemini-2.5-pro"
 
 # --- Khởi tạo ---

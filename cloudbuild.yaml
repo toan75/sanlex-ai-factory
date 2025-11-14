@@ -1,6 +1,5 @@
 steps:
   # Bước 1: Build Docker image
-  # Image này chứa cả mã nguồn và các thư viện test (pytest, httpx)
   - name: 'gcr.io/cloud-builders/docker'
     id: Build
     args:
@@ -9,14 +8,15 @@ steps:
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
       - '.'
 
-  # Bước 2: Chạy Unit Tests (CỔNG CHẤT LƯỢNG)
-  # Sử dụng image vừa build ở bước trên để chạy pytest.
-  # Nếu pytest thất bại (trả về exit code khác 0), toàn bộ quy trình build sẽ dừng lại tại đây.
+  # Bước 2: Chạy Unit Tests (CỔNG CHẤT LƯỢNG) - ĐÃ SỬA LỖI
+  # Sử dụng 'docker run' để thực thi pytest bên trong image chúng ta vừa build.
   - name: 'gcr.io/cloud-builders/docker'
     id: Test
-    entrypoint: 'pytest'
     args:
+      - 'run'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
+      - 'pytest' # Lệnh này sẽ được thực thi bên trong container mới
+    wait_for: [Build] # Đảm bảo bước này chỉ chạy sau khi Build thành công
 
   # Bước 3: Push Docker image (Chỉ chạy nếu bước Test thành công)
   - name: 'gcr.io/cloud-builders/docker'
@@ -24,7 +24,7 @@ steps:
     args:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
-    wait_for: [Test] # Đảm bảo bước này chỉ chạy sau khi Test thành công
+    wait_for: [Test]
 
   # Bước 4: Triển khai lên Cloud Run (Chỉ chạy nếu bước Push thành công)
   - name: 'gcr.io/google-cloud-sdk/gcloud'
@@ -38,7 +38,7 @@ steps:
       - '--region=us-central1'
       - '--platform=managed'
       - '--quiet'
-    wait_for: [Push] # Đảm bảo bước này chỉ chạy sau khi Push thành công
+    wait_for: [Push]
 
 # Lưu trữ image đã build để sử dụng trong các bước
 images:

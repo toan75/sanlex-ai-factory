@@ -44,6 +44,6 @@ steps:
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/sanlexai-repo/hello-agent:$SHORT_SHA'
 
-# --- THÊM KHỐI NÀY VÀO ---
+# --- THÊM KHỐI NÀY VÀO Triger---
 options:
   logging: CLOUD_LOGGING_ONLY
